@@ -30,7 +30,7 @@ git push -u origin main
 ## Шаг 2. Включить сайт (GitHub Pages)
 1. Репозиторий → **Settings → Pages** → Source: **GitHub Actions**.
 2. После первого пуша workflow «Деплой сайта» опубликует сайт.
-3. Домен: **Settings → Pages → Custom domain** → `buyusdt.ru`.
+3. Домен: **Settings → Pages → Custom domain** → `buyusdtinvoice.ru`.
    В DNS у регистратора добавьте записи на GitHub Pages:
    - `A` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
    - либо `CNAME` для www → `ВАШ_ЛОГИН.github.io`

@@ -34,7 +34,7 @@ jobs:
             --exclude 'blog/topics.md' \
             ./ _site/
           # домен для GitHub Pages (custom domain)
-          echo "buyusdt.ru" > _site/CNAME
+          echo "buyusdtinvoice.ru" > _site/CNAME
 
       - uses: actions/upload-pages-artifact@v3
         with:

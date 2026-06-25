@@ -16,7 +16,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const SITE = process.env.SITE_URL || 'https://buyusdt.ru';
+const SITE = process.env.SITE_URL || 'https://buyusdtinvoice.ru';
 const MODEL = process.env.MODEL || 'claude-sonnet-4-6';
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!API_KEY) { console.error('Нет ANTHROPIC_API_KEY'); process.exit(1); }

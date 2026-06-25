@@ -14,7 +14,7 @@ cat > /etc/nginx/sites-available/buyusdt <<'CONF'
 server {
     listen 80;
     listen [::]:80;
-    server_name buyusdt.ru www.buyusdt.ru _;
+    server_name buyusdtinvoice.ru www.buyusdtinvoice.ru _;
 
     root /var/www/buyusdt;
     index index.html;
