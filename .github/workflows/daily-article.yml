@@ -1,0 +1,38 @@
+name: Ежедневная статья в блог
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 07:00 UTC = 10:00 МСК, каждый день
+  workflow_dispatch: {}     # ручной запуск из вкладки Actions
+
+permissions:
+  contents: write
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Сгенерировать статью
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SITE_URL: https://buyusdt.ru
+          MODEL: claude-sonnet-4-6
+        run: node scripts/generate-article.mjs
+
+      - name: Закоммитить, если что-то изменилось
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "Buy_USDTs Bot"
+            git config user.email "bot@buyusdt.ru"
+            git add -A
+            git commit -m "blog: новая статья ($(date +%F))"
+            git push
+          else
+            echo "Очередь пуста или изменений нет — пропускаю."
+          fi

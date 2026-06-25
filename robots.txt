@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Clean-param: utm_source&utm_medium&utm_campaign&utm_term&utm_content&gclid&gad_source&gbraid&gad_campaignid
+
+Host: https://buyusdt.ru
+Sitemap: https://buyusdt.ru/sitemap.xml
