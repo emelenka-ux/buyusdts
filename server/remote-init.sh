@@ -3,9 +3,9 @@
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
-if ! command -v nginx >/dev/null 2>&1; then
+if ! command -v nginx >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
   apt-get update -y
-  apt-get install -y nginx
+  apt-get install -y nginx rsync
 fi
 
 mkdir -p /var/www/buyusdt
