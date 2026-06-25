@@ -1,9 +1,7 @@
 name: Деплой сайта (GitHub Pages)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch: {}   # запуск только вручную (основной деплой — на сервер HostKey через deploy-ssh.yml)
 
 permissions:
   contents: read

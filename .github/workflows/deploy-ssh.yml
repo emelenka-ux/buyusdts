@@ -1,0 +1,41 @@
+name: Деплой на сервер HostKey (SSH)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-ssh
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Инструменты
+        run: sudo apt-get update && sudo apt-get install -y sshpass rsync
+
+      - name: Собрать чистую папку сайта
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude '.git' --exclude '.github' --exclude 'scripts' --exclude 'server' \
+            --exclude 'node_modules' --exclude '.agents' --exclude 'README.md' \
+            --exclude '.gitignore' --exclude 'blog/_template.html' --exclude 'blog/topics.md' \
+            ./ _site/
+
+      - name: Настроить nginx и залить сайт
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          H: ${{ secrets.SSH_HOST }}
+          U: ${{ secrets.SSH_USER }}
+        run: |
+          OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
+          # разовая настройка nginx (идемпотентно)
+          sshpass -e ssh $OPTS "$U@$H" 'bash -s' < server/remote-init.sh
+          # выгрузить сайт в корень nginx
+          sshpass -e rsync -az --delete -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
+          echo "Готово: сайт обновлён на http://$H"
