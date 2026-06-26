@@ -672,6 +672,8 @@ h1,h2,h3,.hero__title,.sec-head h2,.trust__line,.kinetic__track span,
 .btn{border-radius:100px!important}
 .card,.adv,.review{background:var(--panel);border-color:var(--line-soft)}
 .card--accent{background:#141414}
+[data-theme="light"] .card--accent{background:#e8e8e8}
+[data-theme="light"] .card__badge{background:#111;color:#fff}
 .card__edge{background:#fff}
 
 /* ---- mono accents ---- */
