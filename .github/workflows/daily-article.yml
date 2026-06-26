@@ -36,3 +36,27 @@ jobs:
           else
             echo "Очередь пуста или изменений нет — пропускаю."
           fi
+
+      # --- деплой на сервер (коммит ботом не триггерит deploy-ssh, поэтому деплоим тут же) ---
+      - name: Инструменты деплоя
+        run: sudo apt-get update && sudo apt-get install -y sshpass rsync
+
+      - name: Собрать чистую папку сайта
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude '.git' --exclude '.github' --exclude 'scripts' --exclude 'server' \
+            --exclude 'node_modules' --exclude '.agents' --exclude 'README.md' \
+            --exclude '.gitignore' --exclude 'blog/_template.html' --exclude 'blog/topics.md' \
+            ./ _site/
+
+      - name: Деплой на сервер
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          H: ${{ secrets.SSH_HOST }}
+          U: ${{ secrets.SSH_USER }}
+        run: |
+          OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
+          sshpass -e ssh $OPTS "$U@$H" 'bash -s' < server/remote-init.sh
+          sshpass -e rsync -az --delete --exclude '.well-known' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
+          echo "Деплой завершён."
