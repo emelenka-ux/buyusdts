@@ -63,8 +63,9 @@ const system = `Ты — ведущий редактор-копирайтер б
 ОБЪЁМ: 800–1200 слов.
 
 ФОРМАТ ОТВЕТА — СТРОГО валидный JSON без markdown-обёртки:
-{"description": "<=160 символов, от выгоды", "keywords": "6–10 ключей через запятую", "readMin": <число>, "bodyHtml": "<HTML статьи>"}
-В bodyHtml разрешены только теги: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <blockquote>, <a href>, <table>, <thead>, <tbody>, <tr>, <th>, <td>. Начинай с вводного <p> (без <h1>).`;
+{"description": "<=160 символов, от выгоды", "keywords": "6–10 ключей через запятую", "readMin": <число>, "bodyHtml": "<HTML статьи>", "faq": [{"q": "вопрос", "a": "ответ 1–3 предложения"}]}
+В bodyHtml разрешены только теги: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <blockquote>, <a href>, <table>, <thead>, <tbody>, <tr>, <th>, <td>. Начинай с вводного <p> (без <h1>).
+Поле "faq" — те же 3–5 вопросов/ответов, что и в видимом разделе «Частые вопросы» (для микроразметки). Ответы в "faq" — простым текстом без HTML.`;
 
 const resp = await fetch('https://api.anthropic.com/v1/messages', {
   method: 'POST',
@@ -86,6 +87,19 @@ const readMin = Number(art.readMin) || 6;
 
 /* ---- 3. собрать страницу статьи из шаблона ---- */
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// FAQPage микроразметка из faq[]
+const faqArr = Array.isArray(art.faq) ? art.faq.filter((x) => x && x.q && x.a) : [];
+const faqJsonLd = faqArr.length
+  ? `<script type="application/ld+json">\n${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqArr.map((x) => ({
+        '@type': 'Question', name: String(x.q),
+        acceptedAnswer: { '@type': 'Answer', text: String(x.a) },
+      })),
+    })}\n</script>`
+  : '';
+
 const tpl = await readFile(p('blog/_template.html'), 'utf8');
 const page = tpl
   .replace(/\{\{TITLE\}\}/g, esc(topicTitle))
@@ -96,6 +110,7 @@ const page = tpl
   .replace(/\{\{DATE_ISO\}\}/g, iso)
   .replace(/\{\{DATE_HUMAN\}\}/g, human)
   .replace(/\{\{READ_MIN\}\}/g, String(readMin))
+  .replace(/\{\{FAQ_JSONLD\}\}/g, faqJsonLd)
   .replace(/\{\{BODY_HTML\}\}/g, art.bodyHtml || '');
 await writeFile(p('blog', `${slug}.html`), page, 'utf8');
 
