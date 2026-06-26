@@ -1,10 +1,41 @@
 User-agent: *
 Allow: /
 
-# Yandex
+# Яндекс
 User-agent: Yandex
 Allow: /
 Clean-param: utm_source&utm_medium&utm_campaign&utm_term&utm_content&gclid&gad_source&gbraid&gad_campaignid
+
+# ИИ-краулеры: разрешаем цитирование сайта (GEO/AEO)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: YandexAdditional
+Allow: /
+
+User-agent: YandexAdditionalBot
+Allow: /
 
 Host: https://buyusdtinvoice.ru
 Sitemap: https://buyusdtinvoice.ru/sitemap.xml
