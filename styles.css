@@ -787,6 +787,10 @@ h1,h2,h3,.hero__title,.sec-head h2,.trust__line,.kinetic__track span,
 .article__body strong{color:var(--text);font-weight:700}
 .article__body blockquote{margin:24px 0;padding:14px 22px;border-left:2px solid var(--pen);
   font-family:"Caveat",cursive;font-size:24px;color:var(--pen)}
+.article__body table{width:100%;border-collapse:collapse;margin:6px 0 22px;font-size:15px;opacity:1}
+.article__body th,.article__body td{border:1px solid var(--line-soft);padding:10px 13px;text-align:left;vertical-align:top}
+.article__body th{background:var(--panel);font-weight:700;text-transform:none}
+.article__body table a{color:var(--pen)}
 .article__cta{margin-top:46px;padding:34px;border:1px solid var(--line);background:var(--panel);text-align:center}
 .article__cta h3{font-family:"Montserrat",sans-serif;font-weight:800;text-transform:uppercase;font-size:22px;margin-bottom:10px}
 .article__cta p{color:var(--muted);margin-bottom:20px}
