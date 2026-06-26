@@ -62,10 +62,18 @@ const system = `Ты — ведущий редактор-копирайтер б
 
 ОБЪЁМ: 800–1200 слов.
 
-ФОРМАТ ОТВЕТА — СТРОГО валидный JSON без markdown-обёртки:
-{"description": "<=160 символов, от выгоды", "keywords": "6–10 ключей через запятую", "readMin": <число>, "bodyHtml": "<HTML статьи>", "faq": [{"q": "вопрос", "a": "ответ 1–3 предложения"}]}
-В bodyHtml разрешены только теги: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <blockquote>, <a href>, <table>, <thead>, <tbody>, <tr>, <th>, <td>. Начинай с вводного <p> (без <h1>).
-Поле "faq" — те же 3–5 вопросов/ответов, что и в видимом разделе «Частые вопросы» (для микроразметки). Ответы в "faq" — простым текстом без HTML.`;
+ФОРМАТ ОТВЕТА — строго такими блоками с разделителями. Без markdown, без обратных кавычек, без пояснений до или после:
+@@DESC@@
+мета-описание до 160 символов, от выгоды
+@@KEYWORDS@@
+6–10 ключей через запятую
+@@READMIN@@
+число минут чтения (например 7)
+@@BODY@@
+HTML статьи. Разрешённые теги: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <blockquote>, <a href>, <table>, <thead>, <tbody>, <tr>, <th>, <td>. Начни с вводного <p> (без <h1>). В конце — раздел <h2>Частые вопросы</h2> с парами <h3>вопрос</h3><p>ответ</p>.
+@@FAQ@@
+те же 3–5 вопросов из раздела FAQ, каждый на отдельной строке в формате: вопрос ||| ответ (простым текстом, без HTML)
+@@END@@`;
 
 const resp = await fetch('https://api.anthropic.com/v1/messages', {
   method: 'POST',
@@ -79,16 +87,31 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
 });
 if (!resp.ok) { console.error('Ошибка API:', resp.status, await resp.text()); process.exit(1); }
 const data = await resp.json();
-let txt = (data.content?.[0]?.text || '').trim();
-txt = txt.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-let art;
-try { art = JSON.parse(txt); } catch (e) { console.error('Не распарсил JSON ответа:', e.message, '\n', txt.slice(0, 400)); process.exit(1); }
-const readMin = Number(art.readMin) || 6;
+const txt = (data.content?.[0]?.text || '').trim();
+
+// разбор блоков @@LABEL@@ ... до следующего @@...@@ или конца (HTML не нужно экранировать)
+const section = (label) => {
+  const i = txt.indexOf('@@' + label + '@@');
+  if (i === -1) return '';
+  const rest = txt.slice(i + label.length + 4);
+  const next = rest.search(/@@[A-Z]+@@/);
+  return (next === -1 ? rest : rest.slice(0, next)).trim();
+};
+const description = section('DESC');
+const keywords = section('KEYWORDS');
+const bodyHtml = section('BODY');
+const readMin = parseInt(section('READMIN'), 10) || 6;
+if (!bodyHtml || bodyHtml.length < 200) {
+  console.error('Пустой/короткий BODY — ответ модели:\n', txt.slice(0, 600));
+  process.exit(1);
+}
 
 /* ---- 3. собрать страницу статьи из шаблона ---- */
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-// FAQPage микроразметка из faq[]
-const faqArr = Array.isArray(art.faq) ? art.faq.filter((x) => x && x.q && x.a) : [];
+// FAQ из блока @@FAQ@@ (строки "вопрос ||| ответ")
+const faqArr = section('FAQ').split('\n').map((l) => l.trim()).filter(Boolean)
+  .map((l) => { const k = l.indexOf('|||'); return k === -1 ? null : { q: l.slice(0, k).trim(), a: l.slice(k + 3).trim() }; })
+  .filter((x) => x && x.q && x.a);
 const faqJsonLd = faqArr.length
   ? `<script type="application/ld+json">\n${JSON.stringify({
       '@context': 'https://schema.org',
@@ -103,22 +126,22 @@ const faqJsonLd = faqArr.length
 const tpl = await readFile(p('blog/_template.html'), 'utf8');
 const page = tpl
   .replace(/\{\{TITLE\}\}/g, esc(topicTitle))
-  .replace(/\{\{DESCRIPTION\}\}/g, esc(art.description || topicTitle))
-  .replace(/\{\{KEYWORDS\}\}/g, esc(art.keywords || ''))
+  .replace(/\{\{DESCRIPTION\}\}/g, esc(description || topicTitle))
+  .replace(/\{\{KEYWORDS\}\}/g, esc(keywords || ''))
   .replace(/\{\{SLUG\}\}/g, slug)
   .replace(/\{\{TAG\}\}/g, esc(tag))
   .replace(/\{\{DATE_ISO\}\}/g, iso)
   .replace(/\{\{DATE_HUMAN\}\}/g, human)
   .replace(/\{\{READ_MIN\}\}/g, String(readMin))
   .replace(/\{\{FAQ_JSONLD\}\}/g, faqJsonLd)
-  .replace(/\{\{BODY_HTML\}\}/g, art.bodyHtml || '');
+  .replace(/\{\{BODY_HTML\}\}/g, bodyHtml || '');
 await writeFile(p('blog', `${slug}.html`), page, 'utf8');
 
 /* ---- 4. карточка в blog.html ---- */
 const card = `    <a class="post-card reveal" href="blog/${slug}.html">
       <span class="tag">${esc(tag)}</span>
       <h2>${esc(topicTitle)}</h2>
-      <p>${esc(art.description || '')}</p>
+      <p>${esc(description || '')}</p>
       <div class="post-meta"><time>${humanShort}</time><span>${readMin} мин</span></div>
       <span class="post-card__more">Читать →</span>
     </a>`;
