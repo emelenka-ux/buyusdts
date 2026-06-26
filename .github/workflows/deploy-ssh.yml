@@ -37,5 +37,5 @@ jobs:
           # разовая настройка nginx (идемпотентно)
           sshpass -e ssh $OPTS "$U@$H" 'bash -s' < server/remote-init.sh
           # выгрузить сайт в корень nginx
-          sshpass -e rsync -az --delete -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
+          sshpass -e rsync -az --delete --exclude '.well-known' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
           echo "Готово: сайт обновлён на http://$H"
