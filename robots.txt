@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /admin.php
+Disallow: /rates.json
 
 # Яндекс
 User-agent: Yandex

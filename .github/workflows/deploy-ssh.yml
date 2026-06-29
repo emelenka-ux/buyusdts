@@ -32,10 +32,13 @@ jobs:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
           H: ${{ secrets.SSH_HOST }}
           U: ${{ secrets.SSH_USER }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          RATES_ENDPOINT: ${{ secrets.RATES_ENDPOINT }}
         run: |
           OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
-          # разовая настройка nginx (идемпотентно)
-          sshpass -e ssh $OPTS "$U@$H" 'bash -s' < server/remote-init.sh
-          # выгрузить сайт в корень nginx
-          sshpass -e rsync -az --delete --exclude '.well-known' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
+          APB64="$(printf '%s' "$ADMIN_PASSWORD" | base64 -w0)"
+          # разовая настройка nginx+PHP+cron (идемпотентно), с паролем админки и endpoint биржи
+          sshpass -e ssh $OPTS "$U@$H" "ADMIN_PASSWORD_B64='$APB64' RATES_ENDPOINT='$RATES_ENDPOINT' bash -s" < server/remote-init.sh
+          # выгрузить сайт (rates.json не трогаем — его пишет админка/крон)
+          sshpass -e rsync -az --delete --exclude '.well-known' --exclude 'rates.json' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
           echo "Готово: сайт обновлён на http://$H"

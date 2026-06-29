@@ -55,8 +55,11 @@ jobs:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
           H: ${{ secrets.SSH_HOST }}
           U: ${{ secrets.SSH_USER }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          RATES_ENDPOINT: ${{ secrets.RATES_ENDPOINT }}
         run: |
           OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
-          sshpass -e ssh $OPTS "$U@$H" 'bash -s' < server/remote-init.sh
-          sshpass -e rsync -az --delete --exclude '.well-known' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
+          APB64="$(printf '%s' "$ADMIN_PASSWORD" | base64 -w0)"
+          sshpass -e ssh $OPTS "$U@$H" "ADMIN_PASSWORD_B64='$APB64' RATES_ENDPOINT='$RATES_ENDPOINT' bash -s" < server/remote-init.sh
+          sshpass -e rsync -az --delete --exclude '.well-known' --exclude 'rates.json' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
           echo "Деплой завершён."

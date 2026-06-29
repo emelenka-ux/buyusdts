@@ -305,36 +305,10 @@
     });
   }
 
-  /* ---- calculator (реальный стакан USDT/RUB) ---- */
-  // Снимок стакана. Чтобы курс стал live — впишите URL, отдающий такой же JSON:
-  const RATES_ENDPOINT = '';
-  const USDT_CNY = 7.20;   // ориентир USDT→CNY (вне стакана RUB)
-  const EUR_USD  = 1.08;   // ориентир для EUR
-  const FEE = 0.005;       // сервисная маржа
-
-  // highestPrice — лучшая котировка стороны (как в JSON стакана). Именно её показываем как курс.
-  let BOOK = {
-    ask: { // продают USDT — клиент ПОКУПАЕТ; highestPrice = лучшая цена покупки
-      highestPrice: 78.98,
-      items: [
-        [78.98,0.5],[79.00,121.226165],[79.01,0.5],[79.04,7.66],[79.07,9463.10462119],
-        [79.08,16860.23182236],[79.09,29345.12],[79.10,10355.92927554],[79.11,13431.72],
-        [79.12,6006.57],[79.14,4757.77],[79.17,6000],[79.18,7648.91],[79.19,10],[79.20,5018.61],
-        [79.22,1262.2974981],[79.23,8000],[79.25,18.61],[79.26,10000],[79.29,4926.43],
-        [79.30,6425.37],[79.33,5531.33],[79.39,8066.03],[79.44,13034.28],
-      ],
-    },
-    bid: { // покупают USDT — клиент ПРОДАЁТ; highestPrice = лучшая цена продажи
-      highestPrice: 78.97,
-      items: [
-        [78.97,166199.38676204],[78.95,108300.75758511],[78.92,198065.88950836],[78.88,63405.26039553],
-        [78.87,6000],[78.85,298315.45542234],[78.81,628.15581778],[78.80,11430.98314719],[78.78,7986],
-        [78.77,13.6],[78.72,13.61],[78.70,160],[78.68,1906.45653279],[78.67,20013.62],[78.66,12598.01004322],
-        [78.61,3485.1881987],[78.60,29345.33651398],[78.58,13.63],[78.55,8035.58752387],[78.53,13.64],
-        [78.50,5000],[78.48,2540.46228338],[78.46,24073.3858016],[78.45,133994.87788399],
-      ],
-    },
-  };
+  /* ---- calculator (курсы из /rates.json: юань — из админки, USDT — авто с биржи) ---- */
+  const EUR_USD = 1.08; // ориентир для EUR
+  // курсы по умолчанию (фолбэк, если /rates.json недоступен)
+  const R = { usdtBuy: 78.98, usdtSell: 78.97, cnyRub: 12.50, fee: 0.005 };
 
   const SYM = { RUB: '₽', USD: '$', EUR: '€', CNY: '¥', USDT: '₮' };
   const DP  = { RUB: 0, USD: 2, EUR: 2, CNY: 0, USDT: 2 };
@@ -345,34 +319,17 @@
   const toBox = document.getElementById('toCur');
   const swap = document.getElementById('calcSwap');
 
-  const bestAsk = () => BOOK.ask.highestPrice;   // курс покупки USDT (из highestPrice)
-  const bestBid = () => BOOK.bid.highestPrice;   // курс продажи USDT (из highestPrice)
+  const bestAsk = () => R.usdtBuy;   // курс покупки USDT
+  const bestBid = () => R.usdtSell;  // курс продажи USDT
   const fmt = (n) => n.toLocaleString('ru-RU', { maximumFractionDigits: 0 });
   const fmtCur = (n, c) => n.toLocaleString('ru-RU', { minimumFractionDigits: DP[c], maximumFractionDigits: DP[c] });
   const fmt2 = (n) => n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const parseAmt = (s) => parseFloat(String(s).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
 
-  // объёмная средняя по глубине стакана — показываем ПАРАЛЛЕЛЬНО для крупных сумм
-  const vwapBuy = (rub) => {
-    let rem = rub, usdt = 0, cost = 0, last = bestAsk();
-    for (const [p, a] of BOOK.ask.items) { last = p; const lr = p * a;
-      if (rem >= lr) { usdt += a; cost += lr; rem -= lr; }
-      else { usdt += rem / p; cost += rem; rem = 0; break; } }
-    if (rem > 0) { usdt += rem / last; cost += rem; }
-    return usdt ? cost / usdt : bestAsk();
-  };
-  const vwapSell = (u) => {
-    let rem = u, rub = 0, last = bestBid();
-    for (const [p, a] of BOOK.bid.items) { last = p;
-      if (rem >= a) { rub += p * a; rem -= a; }
-      else { rub += p * rem; rem = 0; break; } }
-    if (rem > 0) { rub += last * rem; }
-    return u ? rub / u : bestBid();
-  };
-  // кросс для валют вне стакана, привязка к mid USDT/RUB
+  // кросс для валют без прямого курса, привязка к mid USDT/RUB; CNY — по курсу юаня из админки
   const crossRate = (from, to) => {
-    const mid = (bestAsk() + bestBid()) / 2;
-    const perRub = { RUB: 1, USDT: 1 / mid, USD: 1 / mid, CNY: USDT_CNY / mid, EUR: 1 / (mid * EUR_USD) };
+    const mid = (R.usdtBuy + R.usdtSell) / 2;
+    const perRub = { RUB: 1, USDT: 1 / mid, USD: 1 / mid, CNY: R.cnyRub > 0 ? 1 / R.cnyRub : 0, EUR: 1 / (mid * EUR_USD) };
     return perRub[from] / perRub[to];
   };
 
@@ -382,21 +339,27 @@
     const amt = parseAmt(amountEl.value);
     if (!amt) { resultEl.textContent = '—'; rateEl.textContent = '—'; return; }
     if (from === to) { resultEl.textContent = fmtCur(amt, to) + ' ' + SYM[to]; rateEl.textContent = '1 : 1'; return; }
-    if (from === 'RUB' && to === 'USDT') {                 // покупка USDT по highestPrice
-      const rate = bestAsk(), out = amt / rate * (1 - FEE), vwap = vwapBuy(amt);
+    if (from === 'RUB' && to === 'USDT') {
+      const out = amt / R.usdtBuy * (1 - R.fee);
       resultEl.textContent = fmtCur(out, 'USDT') + ' ' + SYM.USDT;
-      rateEl.textContent = '1 USDT = ' + fmt2(rate) + ' ₽'
-        + (vwap > rate * 1.003 ? ' · средняя ' + fmt2(vwap) : '');
-      return;
+      rateEl.textContent = '1 USDT = ' + fmt2(R.usdtBuy) + ' ₽'; return;
     }
-    if (from === 'USDT' && to === 'RUB') {                 // продажа USDT по highestPrice
-      const rate = bestBid(), out = amt * rate * (1 - FEE), vwap = vwapSell(amt);
+    if (from === 'USDT' && to === 'RUB') {
+      const out = amt * R.usdtSell * (1 - R.fee);
       resultEl.textContent = fmtCur(out, 'RUB') + ' ' + SYM.RUB;
-      rateEl.textContent = '1 USDT = ' + fmt2(rate) + ' ₽'
-        + (vwap < rate * 0.997 ? ' · средняя ' + fmt2(vwap) : '');
-      return;
+      rateEl.textContent = '1 USDT = ' + fmt2(R.usdtSell) + ' ₽'; return;
     }
-    const cross = crossRate(from, to), out = amt * cross * (1 - FEE);
+    if (from === 'RUB' && to === 'CNY' && R.cnyRub > 0) {
+      const out = amt / R.cnyRub * (1 - R.fee);
+      resultEl.textContent = fmtCur(out, 'CNY') + ' ' + SYM.CNY;
+      rateEl.textContent = '1 ¥ = ' + fmt2(R.cnyRub) + ' ₽'; return;
+    }
+    if (from === 'CNY' && to === 'RUB' && R.cnyRub > 0) {
+      const out = amt * R.cnyRub * (1 - R.fee);
+      resultEl.textContent = fmtCur(out, 'RUB') + ' ' + SYM.RUB;
+      rateEl.textContent = '1 ¥ = ' + fmt2(R.cnyRub) + ' ₽'; return;
+    }
+    const cross = crossRate(from, to), out = amt * cross * (1 - R.fee);
     resultEl.textContent = fmtCur(out, to) + ' ' + SYM[to];
     rateEl.textContent = '1 ' + from + ' = ' + cross.toLocaleString('ru-RU', { maximumFractionDigits: 4 }) + ' ' + to;
   };
@@ -435,12 +398,12 @@
   const rateList = document.getElementById('rateList');
   const renderBoard = () => {
     if (!rateList) return;
-    const ask = bestAsk(), bid = bestBid(), spread = ask - bid;
+    const ask = R.usdtBuy, bid = R.usdtSell, spread = Math.max(0, ask - bid);
     const rows = [
       { p: 'Купить USDT', v: ask, dp: 2, tag: 'ask', t: 'up' },
       { p: 'Продать USDT', v: bid, dp: 2, tag: 'bid', t: 'down' },
       { p: 'Спред', v: spread, dp: 2, tag: 'тонкий', t: 'up' },
-      { p: 'USDT / CNY', v: USDT_CNY, dp: 2, tag: '≈', t: 'up' },
+      { p: 'Юань (CNY)', v: R.cnyRub, dp: 2, tag: '₽', t: 'up' },
     ];
     rateList.innerHTML = rows.map((r) => `<li>
         <span class="rateboard__pair">${r.p}</span>
@@ -451,25 +414,21 @@
   };
   renderBoard();
 
-  // live: если задан RATES_ENDPOINT, тянем свежий стакан и обновляем всё
-  const applyBook = (json) => {
-    if (!json || !json.ask || !json.bid) return;
-    const side = (s) => {
-      const items = (s.items || s).map((x) => Array.isArray(x) ? [+x[0], +x[1]] : [+x.price, +x.amount]);
-      const hp = s.highestPrice != null ? +s.highestPrice : (items[0] ? items[0][0] : 0);
-      return { highestPrice: hp, items };
-    };
-    BOOK = { ask: side(json.ask), bid: side(json.bid) };
+  // курсы из /rates.json (юань — из админки, USDT — авто с биржи); обновляем раз в минуту
+  const applyRates = (j) => {
+    if (!j) return;
+    if (+j.usdt_buy  > 0) R.usdtBuy  = +j.usdt_buy;
+    if (+j.usdt_sell > 0) R.usdtSell = +j.usdt_sell;
+    if (+j.cny_rub   > 0) R.cnyRub   = +j.cny_rub;
+    if (j.fee != null && +j.fee >= 0) R.fee = +j.fee;
     renderBoard(); calc();
     rateList && rateList.querySelectorAll('.rateboard__num').forEach((n) => {
       n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash');
     });
   };
-  if (RATES_ENDPOINT) {
-    const poll = () => fetch(RATES_ENDPOINT).then((r) => r.json()).then(applyBook).catch(() => {});
-    poll();
-    if (!reduce) setInterval(poll, 8000);
-  }
+  const loadRates = () => fetch('/rates.json', { cache: 'no-store' }).then((r) => r.json()).then(applyRates).catch(() => {});
+  loadRates();
+  if (!reduce) setInterval(loadRates, 60000);
 
   /* ---- form → Telegram ---- */
   const form = document.getElementById('leadForm');
