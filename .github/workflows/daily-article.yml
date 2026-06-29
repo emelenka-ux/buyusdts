@@ -66,3 +66,20 @@ jobs:
           sshpass -e ssh $OPTS "$U@$H" "ADMIN_PASSWORD_B64='$APB64' RATES_ENDPOINT='$RATES_ENDPOINT' bash -s" < server/remote-init.sh
           sshpass -e rsync -az --delete --exclude '.well-known' --exclude 'rates.json' -e "ssh $OPTS" _site/ "$U@$H:/var/www/buyusdt/"
           echo "Деплой завершён."
+
+      # --- кросс-постинг свежей статьи на vc.ru (если задан VC_TOKEN) ---
+      - name: Кросс-постинг на vc.ru
+        env:
+          VC_TOKEN: ${{ secrets.VC_TOKEN }}
+          VC_SUBSITE_ID: '6025790'
+        run: node scripts/post-vc.mjs
+
+      - name: Сохранить отметку публикации vc
+        run: |
+          if [ -n "$(git status --porcelain scripts/vc-posted.txt)" ]; then
+            git config user.name "Buy_USDTs Bot"
+            git config user.email "bot@buyusdtinvoice.ru"
+            git add scripts/vc-posted.txt
+            git commit -m "vc: отметка о публикации"
+            git push
+          fi
