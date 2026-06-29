@@ -25,6 +25,9 @@ jobs:
           MODEL: claude-sonnet-4-6
         run: node scripts/generate-article.mjs
 
+      - name: Пересобрать RSS-фид (для Дзена и пр.)
+        run: node scripts/build-rss.mjs
+
       - name: Закоммитить, если что-то изменилось
         run: |
           if [ -n "$(git status --porcelain)" ]; then
