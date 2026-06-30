@@ -15,7 +15,7 @@
 <meta property="og:title" content="{{TITLE}}" />
 <meta property="og:description" content="{{DESCRIPTION}}" />
 <meta property="og:url" content="https://buyusdtinvoice.ru/blog/{{SLUG}}.html" />
-<meta property="og:image" content="https://buyusdtinvoice.ru/logo.png" />
+<meta property="og:image" content="https://buyusdtinvoice.ru/blog/img/{{SLUG}}.jpg" />
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" href="/favicon.png" />
 <link rel="apple-touch-icon" href="/favicon.png" />
@@ -60,6 +60,7 @@
 <main class="subpage">
   <article class="article">
     <a class="article__back" href="../blog.html">← В блог</a>
+    <img class="article__cover" src="/blog/img/{{SLUG}}.jpg" alt="{{TITLE}}" loading="eager" onerror="this.onerror=null;this.src='/blog/img/default.jpg'" />
     <header class="article__head">
       <span class="tag">{{TAG}}</span>
       <h1>{{TITLE}}</h1>
@@ -100,7 +101,7 @@
   "datePublished": "{{DATE_ISO}}",
   "dateModified": "{{DATE_ISO}}",
   "inLanguage": "ru",
-  "image": "https://buyusdtinvoice.ru/logo.png",
+  "image": "https://buyusdtinvoice.ru/blog/img/{{SLUG}}.jpg",
   "mainEntityOfPage": "https://buyusdtinvoice.ru/blog/{{SLUG}}.html",
   "author": { "@type": "Organization", "name": "Buy_USDTs" },
   "publisher": { "@type": "Organization", "name": "Buy_USDTs", "logo": { "@type": "ImageObject", "url": "https://buyusdtinvoice.ru/logo.png" } }

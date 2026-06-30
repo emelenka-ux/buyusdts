@@ -24,8 +24,10 @@ for (const f of readdirSync(BLOG)) {
   let body = pick(html, /<div class="article__body">([\s\S]*?)<\/div>\s*<div class="article__cta">/);
   if (!body) body = `<p>${esc(desc)}</p>`;
   if (!title || !iso) continue;
+  const slug = f.replace(/\.html$/, '');
+  const img = `${SITE}/blog/img/${slug}.jpg`;
   const d = new Date(iso + 'T09:00:00+03:00');
-  items.push({ title, desc, link, tag, body, date: d, pubDate: d.toUTCString() });
+  items.push({ title, desc, link, tag, body, img, date: d, pubDate: d.toUTCString() });
 }
 items.sort((a, b) => b.date - a.date);
 
@@ -35,8 +37,9 @@ const xmlItems = items.map((it) => `    <item>
       <guid isPermaLink="true">${it.link}</guid>
       <pubDate>${it.pubDate}</pubDate>
       ${it.tag ? `<category>${esc(it.tag)}</category>` : ''}
+      <enclosure url="${it.img}" type="image/jpeg" length="0" />
       <description>${esc(it.desc)}</description>
-      <content:encoded><![CDATA[${it.body.trim()}]]></content:encoded>
+      <content:encoded><![CDATA[<img src="${it.img}" alt="${esc(it.title)}" />${it.body.trim()}]]></content:encoded>
     </item>`).join('\n');
 
 const rss = `<?xml version="1.0" encoding="UTF-8"?>

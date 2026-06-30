@@ -142,6 +142,7 @@ await writeFile(p('blog', `${slug}.html`), page, 'utf8');
 
 /* ---- 4. карточка в blog.html ---- */
 const card = `    <a class="post-card reveal" href="blog/${slug}.html">
+      <img class="post-card__img" src="/blog/img/${slug}.jpg" alt="" loading="lazy" onerror="this.onerror=null;this.src='/blog/img/default.jpg'" />
       <span class="tag">${esc(tag)}</span>
       <h2>${esc(topicTitle)}</h2>
       <p>${esc(description || '')}</p>
