@@ -29,6 +29,11 @@ const humanShort = today.toLocaleDateString('ru-RU');
 
 /* ---- 1. выбрать тему ---- */
 const topicsRaw = await readFile(p('blog/topics.md'), 'utf8');
+// защита от дублей при дублирующем расписании: если статья за сегодня уже опубликована — выходим
+if (topicsRaw.includes(`[x] ${iso}`)) {
+  console.log(`Статья за ${iso} уже опубликована — пропускаю (защита от дублей).`);
+  process.exit(0);
+}
 const queueMatch = topicsRaw.match(/## В очереди([\s\S]*?)(?=\n## |\s*$)/);
 if (!queueMatch) { console.error('Не найден раздел «В очереди»'); process.exit(1); }
 const lineRe = /- \[ \] (.+?)(?:\s*\(tag:\s*(.+?)\))?\s*→\s*slug:\s*([a-z0-9-]+)/i;
