@@ -62,9 +62,27 @@ const posted = existsSync(POSTED) ? readFileSync(POSTED, 'utf8').split('\n').map
 if (posted.includes(newest.slug)) { console.log(`«${newest.slug}» уже опубликована на vc — пропускаю.`); process.exit(0); }
 
 const url = `${SITE}/blog/${newest.slug}.html`;
+const hdr = { 'X-Device-Token': TOKEN };
 const blocks = toBlocks(newest.body);
 blocks.push({ type: 'text', cover: false, hidden: false, anchor: '',
   data: { text: `<p>Полная версия и калькулятор курса: <a href="${url}">${url}</a></p>` } });
+
+// обложка: vc забирает картинку по URL -> ставим первым блоком как cover
+try {
+  const cr = await fetch('https://api.vc.ru/v2.5/uploader/extract', {
+    method: 'POST', headers: hdr,
+    body: new URLSearchParams({ url: `${SITE}/blog/img/${newest.slug}.jpg` }),
+  });
+  const cj = await cr.json();
+  const media = Array.isArray(cj?.result) ? cj.result[0] : null;
+  if (media && media.type === 'image') {
+    blocks.unshift({ type: 'media', cover: true, hidden: false, anchor: '',
+      data: { items: [{ title: '', author: '', image: media }], with_border: false, with_background: false } });
+    console.log('vc: обложка загружена');
+  } else {
+    console.log('vc: обложку загрузить не удалось — публикую без неё');
+  }
+} catch { console.log('vc: ошибка загрузки обложки — публикую без неё'); }
 
 const entry = {
   id: 0, user_id: SUBSITE, type: 1, subsite_id: SUBSITE, title: newest.title,
@@ -74,8 +92,6 @@ const entry = {
   is_holdonflash: false, forced_to_mainpage: 0, is_holdonmain: false, is_published: false,
   is_adult: false, repostId: null, repostData: null,
 };
-
-const hdr = { 'X-Device-Token': TOKEN };
 
 console.log(`vc: сохраняю черновик «${newest.title}» (${blocks.length} блоков)…`);
 const f1 = new FormData(); f1.append('entry', JSON.stringify(entry));
